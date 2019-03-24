@@ -8,18 +8,24 @@
 
 -export([
 
-  framed_sigil/0,
+  res_sigil/0,
+    framed_sigil/0,
     sigil/0,
 
   first_name/0,
     male_first_name/0,
     female_first_name/0,
 
-  rep_middle_name/0,
+  res_middle_name/0,
+    rep_middle_name/0,
 
   last_name/0,
     base_last_name/0,
     hyphenated_last_name/0,
+
+  res_honorific/0,
+    framed_honorific/0,
+    honorific/0,
 
   name/0
 
@@ -40,10 +46,13 @@ last_name() ->
 
 hyphenated_last_name() ->
 
-  { ok, FirstName }  = proper_gen:pick(base_last_name()),
-  { ok, SecondName } = proper_gen:pick(base_last_name()),
+  ?LET(
+    { FirstName,        SecondName       },
+    { base_last_name(), base_last_name() },
+    FirstName ++ "-" ++ SecondName
+  ).
 
-  FirstName ++ "-" ++ SecondName.
+
 
 
 
@@ -1058,34 +1067,104 @@ base_last_name() ->
 male_first_name()   -> frequency([ {4,"Alvin"}, {2,"Bruce"}, {1,"Todo"} ]).
 female_first_name() -> frequency([ {4,"Alice"}, {2,"Betty"}, {1,"Todo"} ]).
 
-rep_middle_name() ->
-  frequency([
-    {30, fun(_M) -> "" end},
-    {6,  fun(MN) -> [FirstCh | _] = MN, [FirstCh | [$. | [$  | []]]] end},
-    {3,  fun(MN) -> MN ++ " " end},
-    {1,  fun(MN) -> [FirstCh | _] = MN, [FirstCh | [$  | []]]  end}
-  ]).
+
 
 framed_sigil() ->
   frequency([
-    {80, ""},
-    {10, fun(Base) -> " "  ++ Base        end},
-    {3,  fun(Base) -> ", " ++ Base        end},
-    {1,  fun(Base) -> " (" ++ Base ++ ")" end}
+    {80, fun(_Bas) -> ""                   end},
+    {10, fun(Base) -> " "  ++ Base         end},
+    {3,  fun(Base) -> ", " ++ Base         end},
+    {2,  fun(Base) -> " "  ++ Base ++ "."  end},
+    {1,  fun(Base) -> ", " ++ Base ++ "."  end},
+    {1,  fun(Base) -> " (" ++ Base ++ ")"  end},
+    {1,  fun(Base) -> " (" ++ Base ++ ".)" end}
   ]).
 
 sigil() ->
   frequency([
-    {12, "Jr"},
-    {7,  "Sr"},
-    {3,  "III"},
-    {1,  "IV"},
-    {2,  "Esq"},
-    {1,  "MD"},
-    {1,  "DDS"},
-    {1,  "Ph.D"},
-    {1,  "DM"}
+    {120, "Jr"},
+    {70,  "Sr"},
+    {30,  "III"},
+    {10,  "IV"},
+    {5,   "Esq"},
+    {2,   "Esquire"},
+    {1,   "QC"},
+    {2,   "Adv"},
+    {10,  "MD"},
+    {5,   "DDS"},
+    {5,   "Ph.D"},
+    {5,   "DM"}
   ]).
+
+res_sigil() ->
+  ?LET(
+    { Frame,          Sig     },
+    { framed_sigil(), sigil() },
+    Frame(Sig)
+  ).
+
+
+
+framed_honorific() ->
+  frequency([
+    {80, fun(_Bas) -> ""             end},
+    {10, fun(Base) -> Base ++ " "    end},
+    {1,  fun(Base) -> Base ++ ". "   end}
+  ]).
+
+honorific() ->
+  frequency([
+
+    {100, "Mr"},
+    {10,  "Mister"},
+    {5,   "Master"},
+    {2,   "Young Master"},
+
+    {50,  "Ms"},
+    {30,  "Mrs"},
+    {20,  "Mz"},
+    {10,  "Miss"},
+    {5,   "Ms"},
+    {2,   "Mme"},
+
+    {1,   "Mx"},
+    {1,   "M"},
+
+    {5,   "Dr"},
+    {3,   "Prof"},
+    {3,   "Hon"},
+    {3,   "Honorable"},
+
+    {3,   "Rev"},
+    {1,   "Reverend"},
+    {1,   "Rabbi"},
+    {1,   "Imam"},
+    {1,   "Sayyid"},
+    {1,   "Sharif"},
+    {1,   "Haji"},
+
+    {1,   "Lady"},
+    {1,   "Lord"},
+
+    {1,   "Sir"},
+    {1,   "Dame"},
+
+    {1,   "Sire"},
+    {1,   "Madam"},
+
+    {1,   "DDS"},
+    {1,   "Ph.D"},
+    {1,   "DM"}
+  ]).
+
+res_honorific() ->
+  ?LET(
+    { Frame,              Hon         },
+    { framed_honorific(), honorific() },
+    Frame(Hon)
+  ).
+
+
 
 first_name() ->
   frequency([
@@ -1097,11 +1176,61 @@ first_name() ->
 
 
 
+rep_middle_name() ->
+  frequency([
+    {300, fun(_M, _S) -> "" end},
+    {60,  fun(MN, _S) -> [FirstCh | _] = MN, [FirstCh | [$. | [$  | []]]] end},
+    {30,  fun(MN, _S) -> MN ++ " " end},
+    {10,  fun(MN, _S) -> [FirstCh | _] = MN, [FirstCh | [$  | []]]  end},
+
+    {1,   fun(MN, SN) ->
+      [FirstCh | _] = MN,
+      [SecCh   | _] = SN,
+      [FirstCh] ++ [SecCh] ++ " " end},
+
+    {1,   fun(MN, SN) ->
+      [FirstCh | _] = MN,
+      [SecCh   | _] = SN,
+      [FirstCh] ++ "." ++ [SecCh] ++ ". " end},
+
+    {1,   fun(MN, SN) ->
+      [FirstCh | _] = MN,
+      [SecCh   | _] = SN,
+      [FirstCh] ++ [SecCh] ++ ". " end}
+
+  ]).
+
+res_middle_name() ->
+  ?LET(
+    { MiddleName,   MiddleSpare,  MiddleRep         },
+    { first_name(), first_name(), rep_middle_name() },
+    MiddleRep(MiddleName, MiddleSpare)
+  ).
+
+
+
+
+
 name() ->
 
-  { ok, FirstName }  = proper_gen:pick(first_name()),
-  { ok, MiddleName } = proper_gen:pick(first_name()),
-  { ok, MiddleRep }  = proper_gen:pick(rep_middle_name()),
-  { ok, LastName }   = proper_gen:pick(last_name()),
+  ?LET(
+    { RHonorific, First, RMiddle, Last, RSigil },
 
-  FirstName ++ " " ++ MiddleRep(MiddleName) ++ LastName.
+    { res_honorific(),
+      first_name(),
+      res_middle_name(),
+      last_name(),
+      res_sigil() },
+
+    RHonorific ++ First ++ " " ++ RMiddle ++ Last ++ RSigil
+
+  ).
+
+% name() ->
+
+%   { ok, FirstName }  = proper_gen:pick(first_name()),
+%   { ok, MiddleName } = proper_gen:pick(first_name()),
+%   { ok, MiddleRep }  = proper_gen:pick(rep_middle_name()),
+%   { ok, LastName }   = proper_gen:pick(last_name()),
+
+%   FirstName ++ " " ++ MiddleRep(MiddleName) ++ LastName.
